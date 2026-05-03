@@ -37,5 +37,5 @@ public class Stock {
 
     @Column(nullable = false)
     @Builder.Default
-    private String unitOfMeasure = "pieces";
+    private String unitOfMeasure = "piecs";
 }
