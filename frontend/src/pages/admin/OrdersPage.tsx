@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminGetOrders, adminUpdateOrderStatus } from '../../api/admin';
 import OrderCard from '../../components/OrderCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -11,15 +11,14 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const fetchOrders = () => {
+  const fetchOrders = useCallback(() => {
     adminGetOrders({ status: statusFilter || undefined })
       .then((res) => setOrders(res.data.content))
       .catch(console.error)
       .finally(() => setLoading(false));
-  };
+  }, [statusFilter]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setLoading(true); fetchOrders(); }, [statusFilter]);
+  useEffect(() => { setLoading(true); fetchOrders(); }, [fetchOrders, statusFilter]);
 
   const handleStatus = async (id: number, status: OrderStatus) => {
     try {
