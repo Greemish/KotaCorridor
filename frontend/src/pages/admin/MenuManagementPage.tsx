@@ -5,7 +5,15 @@ import type { MenuItem, MenuCategory } from '../../types';
 
 const CATEGORIES: MenuCategory[] = ['KOTA', 'SIDE', 'DRINK', 'EXTRA'];
 
-const emptyForm = { name: '', description: '', price: 0, category: 'KOTA' as MenuCategory, isAvailable: true, imageUrl: '', minimumStockLevel: 5, initialStockQuantity: 50 };
+const emptyForm = {
+  name: '',
+  description: '',
+  price: 0,
+  category: 'KOTA' as MenuCategory,
+  isAvailable: true,
+  imageUrl: '',
+  stockRequirements: [{ stockItemName: '', quantityRequired: 1, unitOfMeasure: 'pieces', minimumStockLevel: 5, initialStockQuantity: 50 }],
+};
 
 export default function MenuManagementPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -24,7 +32,17 @@ export default function MenuManagementPage() {
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
   const openEdit = (item: MenuItem) => {
     setEditing(item);
-    setForm({ name: item.name, description: item.description, price: item.price, category: item.category, isAvailable: item.isAvailable, imageUrl: item.imageUrl || '', minimumStockLevel: 5, initialStockQuantity: 0 });
+    setForm({
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      isAvailable: item.isAvailable,
+      imageUrl: item.imageUrl || '',
+      stockRequirements: item.stockRequirements?.length
+        ? item.stockRequirements.map((r) => ({ ...r, minimumStockLevel: 5, initialStockQuantity: 0 }))
+        : [{ stockItemName: '', quantityRequired: 1, unitOfMeasure: 'pieces', minimumStockLevel: 5, initialStockQuantity: 0 }],
+    });
     setShowForm(true);
   };
 
@@ -129,18 +147,39 @@ export default function MenuManagementPage() {
                   </select>
                 </div>
               </div>
-              {!editing && (
-                <div className="grid grid-cols-2 gap-3">
+              {form.stockRequirements.map((req, idx) => (
+                <div key={idx} className="grid grid-cols-2 gap-3 border rounded-lg p-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Min Stock</label>
-                    <input type="number" value={form.minimumStockLevel} onChange={(e) => setForm((f) => ({ ...f, minimumStockLevel: Number(e.target.value) }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Item Name</label>
+                    <input type="text" value={req.stockItemName} onChange={(e) => setForm((f) => ({ ...f, stockRequirements: f.stockRequirements.map((r, i) => i === idx ? { ...r, stockItemName: e.target.value } : r) }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Initial Stock</label>
-                    <input type="number" value={form.initialStockQuantity} onChange={(e) => setForm((f) => ({ ...f, initialStockQuantity: Number(e.target.value) }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Qty Required per Product</label>
+                    <input type="number" step="0.01" value={req.quantityRequired} onChange={(e) => setForm((f) => ({ ...f, stockRequirements: f.stockRequirements.map((r, i) => i === idx ? { ...r, quantityRequired: Number(e.target.value) } : r) }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                    <input type="text" value={req.unitOfMeasure} onChange={(e) => setForm((f) => ({ ...f, stockRequirements: f.stockRequirements.map((r, i) => i === idx ? { ...r, unitOfMeasure: e.target.value } : r) }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Min Stock Level</label>
+                    <input type="number" value={req.minimumStockLevel} onChange={(e) => setForm((f) => ({ ...f, stockRequirements: f.stockRequirements.map((r, i) => i === idx ? { ...r, minimumStockLevel: Number(e.target.value) } : r) }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                  </div>
+                  {!editing && (
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Initial Stock Quantity</label>
+                      <input type="number" value={req.initialStockQuantity} onChange={(e) => setForm((f) => ({ ...f, stockRequirements: f.stockRequirements.map((r, i) => i === idx ? { ...r, initialStockQuantity: Number(e.target.value) } : r) }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, stockRequirements: [...f.stockRequirements, { stockItemName: '', quantityRequired: 1, unitOfMeasure: 'pieces', minimumStockLevel: 5, initialStockQuantity: 0 }] }))}
+                className="text-sm text-amber-600 hover:underline"
+              >
+                + Add stock requirement
+              </button>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.isAvailable} onChange={(e) => setForm((f) => ({ ...f, isAvailable: e.target.checked }))} className="rounded" />
                 Available for ordering

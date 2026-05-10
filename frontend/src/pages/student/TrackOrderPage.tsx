@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getMyOrder } from '../../api/orders';
+import { getOrder } from '../../api/orders';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { useAuth } from '../../hooks/useAuth';
 import OrderCard from '../../components/OrderCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import type { Order } from '../../types';
@@ -11,13 +10,12 @@ const STEPS = ['PENDING', 'PREPARING', 'READY', 'COMPLETED'];
 
 export default function TrackOrderPage() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchOrder = useCallback(() => {
     if (!id) return;
-    getMyOrder(Number(id)).then((res) => setOrder(res.data)).catch(console.error).finally(() => setLoading(false));
+    getOrder(Number(id)).then((res) => setOrder(res.data)).catch(console.error).finally(() => setLoading(false));
   }, [id]);
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
@@ -32,7 +30,7 @@ export default function TrackOrderPage() {
     [handleStatusUpdate]
   );
 
-  useWebSocket({ enabled: isAuthenticated, subscriptions });
+  useWebSocket({ enabled: true, subscriptions });
 
   if (loading) return <LoadingSpinner />;
   if (!order) return <div className="text-center py-16 text-gray-500">Order not found.</div>;

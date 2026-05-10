@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -22,4 +24,17 @@ public class MenuItemResponse {
     private boolean isAvailable;
     private String imageUrl;
     private Integer stockLevel;
+    @Builder.Default
+    private List<StockRequirementResponse> stockRequirements = new ArrayList<>();
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StockRequirementResponse {
+        private Long stockItemId;
+        private String stockItemName;
+        private Integer quantityRequired;
+        private String unitOfMeasure;
+    }
 }

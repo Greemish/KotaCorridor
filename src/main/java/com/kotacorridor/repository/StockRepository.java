@@ -14,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface StockRepository extends JpaRepository<Stock, Long> {
 
-    Optional<Stock> findByMenuItemId(Long menuItemId);
+    java.util.Optional<Stock> findByItemNameIgnoreCase(String itemName);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM Stock s WHERE s.menuItem.id = :menuItemId")
-    Optional<Stock> findByMenuItemIdWithLock(@Param("menuItemId") Long menuItemId);
+    @Query("SELECT s FROM Stock s WHERE s.id = :stockId")
+    Optional<Stock> findByIdWithLock(@Param("stockId") Long stockId);
 
     @Query("SELECT s FROM Stock s WHERE s.quantityInStock < s.minimumStockLevel AND s.quantityInStock > 0")
     List<Stock> findLowStockItems();

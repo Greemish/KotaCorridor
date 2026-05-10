@@ -1,7 +1,6 @@
 package com.kotacorridor.service;
 
 import com.kotacorridor.dto.request.LoginRequest;
-import com.kotacorridor.dto.request.RegisterRequest;
 import com.kotacorridor.dto.response.AuthResponse;
 import com.kotacorridor.entity.User;
 import com.kotacorridor.enums.Role;
@@ -15,7 +14,6 @@ import com.kotacorridor.service.UserDetailsServiceImpl;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,36 +25,16 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsServiceImpl userDetailsService;
 
-    @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already registered: " + request.getEmail());
-        }
-
-        User user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.STUDENT)
-                .isActive(true)
-                .studentNumber(request.getStudentNumber())
-                .residenceBlock(request.getResidenceBlock())
-                .build();
-
-        user = userRepository.save(user);
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        String token = jwtUtil.generateToken(userDetails);
-
-        return buildAuthResponse(token, user);
-    }
-
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getRole() == Role.STUDENT) {
+            throw new IllegalArgumentException("Student login is disabled. Only admin and staff can log in.");
+        }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtUtil.generateToken(userDetails);
