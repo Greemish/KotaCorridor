@@ -17,9 +17,8 @@ public class Stock {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "menu_item_id", nullable = false, unique = true)
-    private MenuItem menuItem;
+    @Column(nullable = false, unique = true)
+    private String itemName;
 
     @Column(nullable = false)
     @Builder.Default
@@ -37,5 +36,5 @@ public class Stock {
 
     @Column(nullable = false)
     @Builder.Default
-    private String unitOfMeasure = "piecs";
+    private String unitOfMeasure = "pieces";
 }

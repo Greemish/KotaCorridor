@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -19,8 +19,7 @@ export default function LoginPage() {
       const res = await login(email, password);
       authLogin(res.data);
       const role = res.data.role;
-      if (role === 'STUDENT') navigate('/menu');
-      else if (role === 'STAFF') navigate('/staff/queue');
+      if (role === 'STAFF') navigate('/staff/queue');
       else navigate('/admin/dashboard');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
@@ -36,7 +35,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div className="text-6xl mb-3">🥪</div>
           <h1 className="text-3xl font-bold text-amber-700">KotaCorridor</h1>
-          <p className="text-gray-500 mt-1">Sign in to order your kota</p>
+          <p className="text-gray-500 mt-1">Staff/Admin sign in</p>
         </div>
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm">
@@ -75,8 +74,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="text-center mt-6 text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-amber-600 hover:underline font-medium">Register here</Link>
+          Student ordering is open from the Menu page.
         </p>
       </div>
     </div>

@@ -19,10 +19,11 @@ export default function Navbar() {
             <span>KotaCorridor</span>
           </Link>
           <div className="flex items-center gap-4">
-            {user?.role === 'STUDENT' && (
+            {!user && (
               <>
                 <Link to="/menu" className="hover:text-amber-200 text-sm font-medium">Menu</Link>
-                <Link to="/orders" className="hover:text-amber-200 text-sm font-medium">My Orders</Link>
+                <Link to="/orders" className="hover:text-amber-200 text-sm font-medium">Track Orders</Link>
+                <Link to="/login" className="hover:text-amber-200 text-sm font-medium">Staff/Admin Login</Link>
               </>
             )}
             {(user?.role === 'STAFF' || user?.role === 'ADMIN') && (
@@ -38,15 +39,17 @@ export default function Navbar() {
                 <Link to="/admin/users" className="hover:text-amber-200 text-sm font-medium">Users</Link>
               </>
             )}
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-amber-500">
-              <span className="text-sm text-amber-200">{user?.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-amber-700 hover:bg-amber-800 px-3 py-1.5 rounded text-sm font-medium transition-colors"
-              >
-                Logout
-              </button>
-            </div>
+            {user && (
+              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-amber-500">
+                <span className="text-sm text-amber-200">{user.name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="bg-amber-700 hover:bg-amber-800 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -25,6 +25,8 @@ public class OrderResponse {
     private List<OrderItemResponse> items;
     private LocalDateTime createdAt;
     private LocalDateTime completedAt;
+    private String customerName;
+    private String customerContact;
 
     @Data
     @Builder

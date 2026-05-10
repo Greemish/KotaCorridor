@@ -1,13 +1,29 @@
 import client from './client';
 import type { MenuItem, Order, StockItem, StockTransaction, AppUser, AuditLog, AnalyticsOrderCount, PopularItem, RevenueStats, PagedResponse } from '../types';
 
+type AdminMenuPayload = {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  isAvailable: boolean;
+  imageUrl?: string;
+  stockRequirements?: {
+    stockItemName: string;
+    quantityRequired: number;
+    unitOfMeasure?: string;
+    minimumStockLevel?: number;
+    initialStockQuantity?: number;
+  }[];
+};
+
 export const adminGetMenu = () =>
   client.get<MenuItem[]>('/api/admin/menu');
 
-export const adminCreateMenuItem = (data: Partial<MenuItem> & { minimumStockLevel?: number; initialStockQuantity?: number }) =>
+export const adminCreateMenuItem = (data: AdminMenuPayload) =>
   client.post<MenuItem>('/api/admin/menu', data);
 
-export const adminUpdateMenuItem = (id: number, data: Partial<MenuItem>) =>
+export const adminUpdateMenuItem = (id: number, data: AdminMenuPayload) =>
   client.put<MenuItem>(`/api/admin/menu/${id}`, data);
 
 export const adminDeleteMenuItem = (id: number) =>

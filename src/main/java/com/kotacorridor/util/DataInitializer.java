@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -58,17 +57,6 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         userRepository.save(staff);
 
-        // Create Student user
-        User student = User.builder()
-                .name("Test Student")
-                .email("student@res.com")
-                .password(passwordEncoder.encode("Student@123"))
-                .role(Role.STUDENT)
-                .isActive(true)
-                .studentNumber("STU001")
-                .build();
-        userRepository.save(student);
-
         // Create menu items and stock
         createMenuItemWithStock("Chicken Kota", "Delicious chicken kota",
                 new BigDecimal("25.00"), MenuCategory.KOTA, true, 50, 10);
@@ -99,10 +87,9 @@ public class DataInitializer implements CommandLineRunner {
         menuItem = menuItemRepository.save(menuItem);
 
         Stock stock = Stock.builder()
-                .menuItem(menuItem)
+                .itemName(name + " stock")
                 .quantityInStock(quantity)
                 .minimumStockLevel(minLevel)
-                .lastRestockedDate(LocalDateTime.now())
                 .unitOfMeasure("pieces")
                 .build();
         stockRepository.save(stock);

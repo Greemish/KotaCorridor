@@ -20,8 +20,8 @@ public class InventoryTransaction {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "menu_item_id", nullable = false)
-    private MenuItem menuItem;
+    @JoinColumn(name = "stock_id", nullable = false)
+    private Stock stockItem;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

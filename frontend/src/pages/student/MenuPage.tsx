@@ -4,13 +4,11 @@ import { placeOrder } from '../../api/orders';
 import MenuItemCard from '../../components/MenuItemCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { useAuth } from '../../hooks/useAuth';
 import type { MenuItem, CartItem, MenuCategory, Order } from '../../types';
 
 const CATEGORIES: MenuCategory[] = ['KOTA', 'SIDE', 'DRINK', 'EXTRA'];
 
 export default function MenuPage() {
-  const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +17,8 @@ export default function MenuPage() {
   const [notification, setNotification] = useState<string | null>(null);
   const [showCart, setShowCart] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MenuCategory>('KOTA');
+  const [customerName, setCustomerName] = useState('');
+  const [customerContact, setCustomerContact] = useState('');
 
   useEffect(() => {
     getAvailableMenu()
@@ -38,7 +38,7 @@ export default function MenuPage() {
     [handleStatusUpdate]
   );
 
-  useWebSocket({ enabled: isAuthenticated, subscriptions });
+  useWebSocket({ enabled: true, subscriptions });
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
@@ -57,12 +57,24 @@ export default function MenuPage() {
 
   const handlePlaceOrder = async () => {
     if (!cart.length) return;
+    if (!customerName.trim()) {
+      setNotification('❌ Please enter your name before placing an order.');
+      setTimeout(() => setNotification(null), 5000);
+      return;
+    }
     setPlacing(true);
     try {
       const res = await placeOrder({
+        customerName: customerName.trim(),
+        customerContact: customerContact.trim() || undefined,
         items: cart.map((c) => ({ menuItemId: c.menuItem.id, quantity: c.quantity, customizations: c.customizations })),
         specialInstructions: specialInstructions || undefined,
       });
+      const existing = localStorage.getItem('guest_order_ids');
+      const ids: number[] = existing ? JSON.parse(existing) : [];
+      if (!ids.includes(res.data.id)) {
+        localStorage.setItem('guest_order_ids', JSON.stringify([res.data.id, ...ids].slice(0, 50)));
+      }
       setNotification(`✅ Order #${res.data.orderNumber} placed! Queue position: ${res.data.queuePosition ?? 'N/A'}`);
       setTimeout(() => setNotification(null), 6000);
       setCart([]);
@@ -153,6 +165,18 @@ export default function MenuPage() {
               ))}
             </div>
             <div className="p-5 border-t space-y-3">
+              <input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Your name *"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <input
+                value={customerContact}
+                onChange={(e) => setCustomerContact(e.target.value)}
+                placeholder="Phone/Room (optional)"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
               <textarea
                 value={specialInstructions}
                 onChange={(e) => setSpecialInstructions(e.target.value)}

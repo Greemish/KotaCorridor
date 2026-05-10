@@ -4,7 +4,6 @@ import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
 import MenuPage from './pages/student/MenuPage';
 import OrdersPage from './pages/student/OrdersPage';
 import TrackOrderPage from './pages/student/TrackOrderPage';
@@ -19,8 +18,7 @@ import AuditLogsPage from './pages/admin/AuditLogsPage';
 
 function RootRedirect() {
   const { user, isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (user?.role === 'STUDENT') return <Navigate to="/menu" replace />;
+  if (!isAuthenticated) return <Navigate to="/menu" replace />;
   if (user?.role === 'STAFF') return <Navigate to="/staff/queue" replace />;
   return <Navigate to="/admin/dashboard" replace />;
 }
@@ -31,12 +29,11 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<RootRedirect />} />
-            <Route path="/menu" element={<ProtectedRoute roles={['STUDENT']}><MenuPage /></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute roles={['STUDENT']}><OrdersPage /></ProtectedRoute>} />
-            <Route path="/orders/:id" element={<ProtectedRoute roles={['STUDENT']}><TrackOrderPage /></ProtectedRoute>} />
+            <Route path="/menu" element={<MenuPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/:id" element={<TrackOrderPage />} />
             <Route path="/staff/queue" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><QueuePage /></ProtectedRoute>} />
             <Route path="/staff/stock-alerts" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><StockAlertsPage /></ProtectedRoute>} />
             <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><DashboardPage /></ProtectedRoute>} />
