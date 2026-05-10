@@ -7,6 +7,7 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import type { MenuItem, CartItem, MenuCategory, Order } from '../../types';
 
 const CATEGORIES: MenuCategory[] = ['KOTA', 'SIDE', 'DRINK', 'EXTRA'];
+const MAX_STORED_GUEST_ORDERS = 50;
 
 export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -73,7 +74,7 @@ export default function MenuPage() {
       const existing = localStorage.getItem('guest_order_ids');
       const ids: number[] = existing ? JSON.parse(existing) : [];
       if (!ids.includes(res.data.id)) {
-        localStorage.setItem('guest_order_ids', JSON.stringify([res.data.id, ...ids].slice(0, 50)));
+        localStorage.setItem('guest_order_ids', JSON.stringify([res.data.id, ...ids].slice(0, MAX_STORED_GUEST_ORDERS)));
       }
       setNotification(`✅ Order #${res.data.orderNumber} placed! Queue position: ${res.data.queuePosition ?? 'N/A'}`);
       setTimeout(() => setNotification(null), 6000);
