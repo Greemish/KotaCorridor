@@ -31,7 +31,17 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()  // Allow all requests
+                        .requestMatchers(
+                                "/",
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/menu/**",
+                                "/h2-console/**",
+                                "/ws/**",
+                                "/app/**",
+                                "/topic/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(AbstractHttpConfigurer::disable)

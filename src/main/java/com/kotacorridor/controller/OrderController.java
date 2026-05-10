@@ -4,7 +4,6 @@ import com.kotacorridor.dto.request.PlaceOrderRequest;
 import com.kotacorridor.dto.response.OrderResponse;
 import com.kotacorridor.entity.User;
 import com.kotacorridor.exception.ResourceNotFoundException;
-import com.kotacorridor.exception.UnauthorizedActionException;
 import com.kotacorridor.repository.UserRepository;
 import com.kotacorridor.service.OrderService;
 import jakarta.validation.Valid;
@@ -28,35 +27,28 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody PlaceOrderRequest request,
                                                       @AuthenticationPrincipal UserDetails userDetails) {
-        User student = getAuthenticatedUser(userDetails);
+        User student = getUser(userDetails.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(request, student));
     }
 
     @GetMapping("/my")
     public ResponseEntity<List<OrderResponse>> getMyOrders(@AuthenticationPrincipal UserDetails userDetails) {
-        User student = getAuthenticatedUser(userDetails);
+        User student = getUser(userDetails.getUsername());
         return ResponseEntity.ok(orderService.getStudentOrders(student.getId()));
     }
 
     @GetMapping("/my/{id}")
     public ResponseEntity<OrderResponse> getMyOrder(@PathVariable Long id,
                                                       @AuthenticationPrincipal UserDetails userDetails) {
-        User student = getAuthenticatedUser(userDetails);
+        User student = getUser(userDetails.getUsername());
         return ResponseEntity.ok(orderService.getStudentOrderById(id, student.getId()));
     }
 
     @DeleteMapping("/my/{id}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long id,
                                                        @AuthenticationPrincipal UserDetails userDetails) {
-        User student = getAuthenticatedUser(userDetails);
+        User student = getUser(userDetails.getUsername());
         return ResponseEntity.ok(orderService.cancelOrder(id, student.getId()));
-    }
-
-    private User getAuthenticatedUser(UserDetails userDetails) {
-        if (userDetails == null) {
-            throw new UnauthorizedActionException("Authentication required");
-        }
-        return getUser(userDetails.getUsername());
     }
 
     private User getUser(String email) {
