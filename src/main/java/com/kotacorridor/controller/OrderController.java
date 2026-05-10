@@ -26,7 +26,7 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody PlaceOrderRequest request,
-                                                     @AuthenticationPrincipal UserDetails userDetails) {
+                                                      @AuthenticationPrincipal UserDetails userDetails) {
         User student = getUser(userDetails.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(request, student));
     }
@@ -39,14 +39,14 @@ public class OrderController {
 
     @GetMapping("/my/{id}")
     public ResponseEntity<OrderResponse> getMyOrder(@PathVariable Long id,
-                                                     @AuthenticationPrincipal UserDetails userDetails) {
+                                                      @AuthenticationPrincipal UserDetails userDetails) {
         User student = getUser(userDetails.getUsername());
         return ResponseEntity.ok(orderService.getStudentOrderById(id, student.getId()));
     }
 
     @DeleteMapping("/my/{id}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long id,
-                                                      @AuthenticationPrincipal UserDetails userDetails) {
+                                                       @AuthenticationPrincipal UserDetails userDetails) {
         User student = getUser(userDetails.getUsername());
         return ResponseEntity.ok(orderService.cancelOrder(id, student.getId()));
     }
