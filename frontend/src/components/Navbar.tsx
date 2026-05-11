@@ -29,7 +29,7 @@ export default function Navbar() {
             {(user?.role === 'STAFF' || user?.role === 'ADMIN') && (
               <>
                 <Link to="/staff/queue" className="hover:text-amber-200 text-sm font-medium">Queue</Link>
-                <Link to="/staff/stock-alerts" className="hover:text-amber-200 text-sm font-medium">Stock Alerts</Link>
+                <Link to="/admin/stock" className="hover:text-amber-200 text-sm font-medium">Stock</Link>
               </>
             )}
             {user?.role === 'ADMIN' && (

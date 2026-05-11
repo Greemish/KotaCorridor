@@ -137,6 +137,7 @@ export interface AppUser {
 }
 
 export interface AuditLog {
+  timestamp: Date;
   id: number;
   action: string;
   performedBy: string;

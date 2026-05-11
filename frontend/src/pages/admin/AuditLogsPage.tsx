@@ -37,7 +37,7 @@ export default function AuditLogsPage() {
           <tbody className="divide-y divide-gray-50">
             {logs.map((log) => (
               <tr key={log.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
+                <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
                 <td className="px-4 py-3 font-medium text-gray-900">{log.action}</td>
                 <td className="px-4 py-3 text-gray-600">{log.performedBy}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">{log.details}</td>
