@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
+id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE menu_items (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price NUMERIC(10, 2) NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE menu_items (
 );
 
 CREATE TABLE stock (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     item_name VARCHAR(255) NOT NULL UNIQUE,
     quantity_in_stock INTEGER NOT NULL DEFAULT 0,
     minimum_stock_level INTEGER NOT NULL DEFAULT 0,
@@ -44,14 +44,14 @@ CREATE TABLE stock (
 );
 
 CREATE TABLE product_stock_requirements (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     menu_item_id BIGINT NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
     stock_id BIGINT NOT NULL REFERENCES stock(id) ON DELETE CASCADE,
     quantity_required INTEGER NOT NULL
 );
 
 CREATE TABLE orders (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_number VARCHAR(255) NOT NULL UNIQUE,
     student_id BIGINT REFERENCES users(id),
     customer_name VARCHAR(255),
@@ -66,7 +66,7 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE order_items (
-    id BIGSERIAL PRIMARY KEY,
+id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     menu_item_id BIGINT NOT NULL REFERENCES menu_items(id),
     quantity INTEGER NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE order_items (
 );
 
 CREATE TABLE inventory_transactions (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     stock_id BIGINT NOT NULL REFERENCES stock(id),
     transaction_type VARCHAR(30) NOT NULL,
     quantity_changed INTEGER NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE inventory_transactions (
 );
 
 CREATE TABLE audit_logs (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     action VARCHAR(255) NOT NULL,
     performed_by BIGINT NOT NULL,
     performed_by_email VARCHAR(255) NOT NULL,
@@ -99,7 +99,7 @@ CREATE TABLE audit_logs (
 );
 
 CREATE TABLE menu_item_customizations (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     menu_item_id BIGINT NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
     customization_name VARCHAR(255) NOT NULL,
     additional_price NUMERIC(10, 2) NOT NULL,

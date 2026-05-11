@@ -26,14 +26,43 @@ public class AuthService {
     private final UserDetailsServiceImpl userDetailsService;
 
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        // DEBUG: Check what's in the database
+        System.out.println("=== LOGIN DEBUG ===");
+        System.out.println("Attempting login for email: " + request.getEmail());
+        System.out.println("Password provided: " + request.getPassword());
 
+        // Check if user exists
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElse(null);
 
+        if (user == null) {
+            System.out.println("ERROR: User not found with email: " + request.getEmail());
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        System.out.println("User found: " + user.getName());
+        System.out.println("Role: " + user.getRole());
+        System.out.println("Stored password in DB: " + user.getPassword());
+        System.out.println("PasswordEncoder class: " + passwordEncoder.getClass().getSimpleName());
+
+        // Test password match directly
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        System.out.println("Password matches directly: " + passwordMatches);
+
+        // Check role restriction
         if (user.getRole() == Role.STUDENT) {
+            System.out.println("ERROR: Student login blocked");
             throw new IllegalArgumentException("Student login is disabled. Only admin and staff can log in.");
+        }
+
+        // Try authentication
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+            System.out.println("Authentication successful!");
+        } catch (Exception e) {
+            System.out.println("Authentication failed: " + e.getMessage());
+            throw e;
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
