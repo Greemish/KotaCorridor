@@ -15,6 +15,7 @@ import AdminOrdersPage from './pages/admin/OrdersPage';
 import StockPage from './pages/admin/StockPage';
 import UsersPage from './pages/admin/UsersPage';
 import AuditLogsPage from './pages/admin/AuditLogsPage';
+import CustomerDisplayPage from './pages/CustomerDisplayPage';
 
 function RootRedirect() {
   const { user, isAuthenticated } = useAuth();
@@ -25,27 +26,44 @@ function RootRedirect() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<Layout />}>
-            <Route path="/" element={<RootRedirect />} />
-            <Route path="/menu" element={<MenuPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/orders/:id" element={<TrackOrderPage />} />
-            <Route path="/staff/queue" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><QueuePage /></ProtectedRoute>} />
-            <Route path="/staff/stock-alerts" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><StockAlertsPage /></ProtectedRoute>} />
-            <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><DashboardPage /></ProtectedRoute>} />
-            <Route path="/admin/menu" element={<ProtectedRoute roles={['ADMIN']}><MenuManagementPage /></ProtectedRoute>} />
-            <Route path="/admin/orders" element={<ProtectedRoute roles={['ADMIN']}><AdminOrdersPage /></ProtectedRoute>} />
-            <Route path="/admin/stock" element={<ProtectedRoute roles={['ADMIN']}><StockPage /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><UsersPage /></ProtectedRoute>} />
-            <Route path="/admin/audit-logs" element={<ProtectedRoute roles={['ADMIN']}><AuditLogsPage /></ProtectedRoute>} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Login Route */}
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* All Protected Routes inside the Layout */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<RootRedirect />} />
+              <Route path="/menu" element={<MenuPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/orders/:id" element={<TrackOrderPage />} />
+
+              {/* The Display Page - Now Protected */}
+              <Route
+                  path="/display"
+                  element={
+                    <ProtectedRoute roles={['STAFF', 'ADMIN']}>
+                      <CustomerDisplayPage />
+                    </ProtectedRoute>
+                  }
+              />
+
+              {/* Staff Routes */}
+              <Route path="/staff/queue" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><QueuePage /></ProtectedRoute>} />
+              <Route path="/staff/stock-alerts" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><StockAlertsPage /></ProtectedRoute>} />
+
+              {/* Admin Routes */}
+              <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><DashboardPage /></ProtectedRoute>} />
+              <Route path="/admin/menu" element={<ProtectedRoute roles={['ADMIN']}><MenuManagementPage /></ProtectedRoute>} />
+              <Route path="/admin/orders" element={<ProtectedRoute roles={['ADMIN']}><AdminOrdersPage /></ProtectedRoute>} />
+              <Route path="/admin/stock" element={<ProtectedRoute roles={['ADMIN']}><StockPage /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><UsersPage /></ProtectedRoute>} />
+              <Route path="/admin/audit-logs" element={<ProtectedRoute roles={['ADMIN']}><AuditLogsPage /></ProtectedRoute>} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
   );
 }
 
