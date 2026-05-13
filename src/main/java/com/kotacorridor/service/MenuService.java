@@ -83,10 +83,10 @@ public class MenuService {
         MenuItem menuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("MenuItem", id));
 
-        // First, delete all stock requirements for this menu item
+        // First, delete all stock requirements (ingredients)
         requirementRepository.deleteByMenuItemId(id);
 
-        // Then delete the menu item itself
+        // Then delete the menu item
         menuItemRepository.delete(menuItem);
     }
 

@@ -9,20 +9,29 @@ export default function CustomerDisplayPage() {
     const { isAuthenticated } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState(new Date());
 
-    const fetchQueue = useCallback(() => {
-        getOrderQueue()
-            .then((res) => {
-                setOrders(res.data || []);
-            })
-            .catch((err) => {
-                console.error("API Error on Display Page:", err);
-            })
-            .finally(() => setLoading(false));
+    const fetchQueue = useCallback(async () => {
+        try {
+            const res = await getOrderQueue();
+            setOrders(res.data || []);
+            setLastUpdated(new Date());
+        } catch (err) {
+            console.error("API Error on Display Page:", err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
+    // Auto-refresh every 10 seconds
     useEffect(() => {
         fetchQueue();
+
+        const interval = setInterval(() => {
+            fetchQueue();
+        }, 10000); // Refresh every 10 seconds
+
+        return () => clearInterval(interval);
     }, [fetchQueue]);
 
     const handleRefresh = useCallback(() => {
@@ -90,6 +99,11 @@ export default function CustomerDisplayPage() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Auto-refresh indicator */}
+            <div className="fixed bottom-2 right-2 text-xs text-gray-500 bg-black/50 px-2 py-1 rounded">
+                Auto-refreshing every 10s | Last updated: {lastUpdated.toLocaleTimeString()}
             </div>
         </div>
     );

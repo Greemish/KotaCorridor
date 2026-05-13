@@ -73,3 +73,11 @@ export const adminGetRevenue = (params?: { startDate?: string; endDate?: string 
 
 export const adminGetAuditLogs = (params?: { page?: number; size?: number }) =>
   client.get<PagedResponse<AuditLog>>('/api/admin/audit-logs', { params });
+
+
+export const adminCreateStock = (data: {
+  itemName: string;
+  quantityInStock: number;
+  minimumStockLevel: number;
+  unitOfMeasure: string;
+}) => client.post('/api/admin/stock', data);

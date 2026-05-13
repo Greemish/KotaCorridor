@@ -1,4 +1,4 @@
-export type UserRole = 'STAFF' | 'ADMIN';
+export type UserRole = 'STUDENT' | 'STAFF' | 'ADMIN';
 
 export interface User {
   userId: number;
@@ -111,6 +111,7 @@ export interface StockItem {
   unitOfMeasure: string;
   stockStatus: string;
   lastRestockedDate?: string;
+
 }
 
 export interface StockTransaction {

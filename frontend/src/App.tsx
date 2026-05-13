@@ -8,9 +8,9 @@ import MenuPage from './pages/student/MenuPage';
 import OrdersPage from './pages/student/OrdersPage';
 import TrackOrderPage from './pages/student/TrackOrderPage';
 import QueuePage from './pages/staff/QueuePage';
-import StockAlertsPage from './pages/staff/StockAlertsPage';
+//import StockAlertsPage from './pages/staff/StockAlertsPage';
 import DashboardPage from './pages/admin/DashboardPage';
-import MenuManagementPage from './pages/admin/MenuManagementPage';
+import {MenuManagementPage} from './pages/admin/MenuManagementPage';
 import AdminOrdersPage from './pages/admin/OrdersPage';
 import StockPage from './pages/admin/StockPage';
 import UsersPage from './pages/admin/UsersPage';
@@ -21,7 +21,8 @@ function RootRedirect() {
   const { user, isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/menu" replace />;
   if (user?.role === 'STAFF') return <Navigate to="/staff/queue" replace />;
-  return <Navigate to="/admin/dashboard" replace />;
+  if (user?.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
+  return <Navigate to="/menu" replace />;
 }
 
 function App() {
@@ -51,7 +52,9 @@ function App() {
 
               {/* Staff Routes */}
               <Route path="/staff/queue" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><QueuePage /></ProtectedRoute>} />
-              <Route path="/staff/stock-alerts" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><StockAlertsPage /></ProtectedRoute>} />
+
+              {/* Staff can access menu (for taking orders) - No longer need stock alerts */}
+              {/* <Route path="/staff/stock-alerts" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><StockAlertsPage /></ProtectedRoute>} /> */}
 
               {/* Admin Routes */}
               <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><DashboardPage /></ProtectedRoute>} />
