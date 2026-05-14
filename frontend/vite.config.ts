@@ -8,6 +8,7 @@ export default defineConfig({
     global: 'globalThis',
   },
   server: {
+    host: '0.0.0.0',  // ADD THIS LINE - allows network access
     port: 5173,
     proxy: {
       '/api': {
