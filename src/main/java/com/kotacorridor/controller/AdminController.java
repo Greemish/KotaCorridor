@@ -20,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import com.kotacorridor.dto.request.CreateStockRequest;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -33,13 +34,13 @@ import java.util.Map;
 public class AdminController {
 
     private final MenuService menuService;
-    private final OrderService orderService;
     private final StockService stockService;
     private final UserService userService;
     private final AuditLogService auditLogService;
     private final UserRepository userRepository;
     private final com.kotacorridor.repository.OrderItemRepository orderItemRepository;
     private final com.kotacorridor.repository.OrderRepository orderRepository;
+    private final OrderService orderService;
 
     // ===== MENU ENDPOINTS =====
 
@@ -74,14 +75,16 @@ public class AdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             Pageable pageable) {
+        // Your OrderService.getAllOrders takes 5 parameters: status, studentId, startDate, endDate, pageable
         return ResponseEntity.ok(orderService.getAllOrders(status, studentId, startDate, endDate, pageable));
     }
 
     @PutMapping("/orders/{id}/status")
     public ResponseEntity<OrderResponse> overrideOrderStatus(@PathVariable Long id,
-                                                              @Valid @RequestBody UpdateOrderStatusRequest request,
-                                                              @AuthenticationPrincipal UserDetails userDetails) {
+                                                             @Valid @RequestBody UpdateOrderStatusRequest request,
+                                                             @AuthenticationPrincipal UserDetails userDetails) {
         User admin = getUser(userDetails.getUsername());
+        // Your OrderService.updateOrderStatus takes 3 parameters: orderId, request, isAdmin
         OrderResponse response = orderService.updateOrderStatus(id, request, true);
         auditLogService.log("ORDER_STATUS_OVERRIDE", admin.getId(), admin.getEmail(),
                 "Order", id, "New status: " + request.getStatus());
@@ -221,5 +224,10 @@ public class AdminController {
     private User getUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+    }
+
+    @PostMapping("/stock")
+    public ResponseEntity<StockResponse> createStockItem(@Valid @RequestBody CreateStockRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(stockService.createStockItem(request));
     }
 }

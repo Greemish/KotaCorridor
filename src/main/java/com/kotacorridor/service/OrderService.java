@@ -23,24 +23,28 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderService {
+    private static final long GUEST_PERFORMER_ID = 0L;
 
     private final OrderRepository orderRepository;
     private final MenuItemRepository menuItemRepository;
     private final StockRepository stockRepository;
+    private final ProductStockRequirementRepository requirementRepository;
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final OrderNumberGenerator orderNumberGenerator;
     private final QueueService queueService;
     private final WebSocketNotificationService notificationService;
 
     @Transactional
-    public OrderResponse placeOrder(PlaceOrderRequest request, User student) {
+    public OrderResponse placeOrder(PlaceOrderRequest request) {
         // 1. Validate all items exist and are available
         List<MenuItem> menuItems = new ArrayList<>();
         for (var item : request.getItems()) {
@@ -52,30 +56,40 @@ public class OrderService {
             menuItems.add(menuItem);
         }
 
-        // 2. Check and lock stock for all items
-        List<Stock> lockedStocks = new ArrayList<>();
-        List<String> insufficientItems = new ArrayList<>();
-
+        // 2. Aggregate required stock for all order items
+        Map<Long, Integer> requiredByStockId = new HashMap<>();
         for (int i = 0; i < request.getItems().size(); i++) {
             var itemReq = request.getItems().get(i);
-            Stock stock = stockRepository.findByMenuItemIdWithLock(itemReq.getMenuItemId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Stock for menuItem", itemReq.getMenuItemId()));
-
-            if (stock.getQuantityInStock() < itemReq.getQuantity()) {
-                insufficientItems.add(String.format("Insufficient stock for item: %s. Available: %d, Requested: %d",
-                        menuItems.get(i).getName(), stock.getQuantityInStock(), itemReq.getQuantity()));
+            MenuItem menuItem = menuItems.get(i);
+            List<ProductStockRequirement> requirements = requirementRepository.findByMenuItemId(menuItem.getId());
+            for (ProductStockRequirement requirement : requirements) {
+                int requiredQty = requirement.getQuantityRequired() * itemReq.getQuantity();
+                requiredByStockId.merge(requirement.getStockItem().getId(), requiredQty, Integer::sum);
             }
-            lockedStocks.add(stock);
+        }
+
+        // 3. Lock stock and validate availability
+        Map<Long, Stock> lockedStocks = new HashMap<>();
+        List<String> insufficientItems = new ArrayList<>();
+        for (Map.Entry<Long, Integer> entry : requiredByStockId.entrySet()) {
+            Stock stock = stockRepository.findByIdWithLock(entry.getKey())
+                    .orElseThrow(() -> new ResourceNotFoundException("Stock item", entry.getKey()));
+            if (stock.getQuantityInStock() < entry.getValue()) {
+                insufficientItems.add(String.format("Insufficient stock for %s. Available: %d, Required: %d",
+                        stock.getItemName(), stock.getQuantityInStock(), entry.getValue()));
+            }
+            lockedStocks.put(entry.getKey(), stock);
         }
 
         if (!insufficientItems.isEmpty()) {
             throw new InsufficientStockException(String.join("; ", insufficientItems));
         }
 
-        // 3. Build order
+        // 4. Build order
         Order order = Order.builder()
                 .orderNumber(orderNumberGenerator.generateOrderNumber())
-                .student(student)
+                .customerName(request.getCustomerName())
+                .customerContact(request.getCustomerContact())
                 .status(OrderStatus.PENDING)
                 .specialInstructions(request.getSpecialInstructions())
                 .build();
@@ -104,47 +118,38 @@ public class OrderService {
         order.setTotalAmount(total);
         order.setItems(orderItems);
 
-        // 4. Save order (sets createdAt)
+        // 5. Save order (sets createdAt)
         order = orderRepository.save(order);
 
-        // 5. Calculate queue position
+        // 6. Calculate queue position
         int queuePosition = queueService.calculateQueuePosition(order);
         order.setQueuePosition(queuePosition);
         order = orderRepository.save(order);
 
-        // 6. Deduct stock and log transactions
-        for (int i = 0; i < request.getItems().size(); i++) {
-            var itemReq = request.getItems().get(i);
-            Stock stock = lockedStocks.get(i);
-            MenuItem menuItem = menuItems.get(i);
-
+        // 7. Deduct stock and log transactions
+        for (Map.Entry<Long, Integer> entry : requiredByStockId.entrySet()) {
+            Stock stock = lockedStocks.get(entry.getKey());
             int previousQty = stock.getQuantityInStock();
-            int newQty = previousQty - itemReq.getQuantity();
+            int newQty = previousQty - entry.getValue();
             stock.setQuantityInStock(newQty);
             stockRepository.save(stock);
 
-            // 7. Auto-mark unavailable if stock hits zero
-            if (newQty == 0) {
-                menuItem.setAvailable(false);
-                menuItemRepository.save(menuItem);
-            }
-
             // Log inventory transaction
             InventoryTransaction transaction = InventoryTransaction.builder()
-                    .menuItem(menuItem)
+                    .stockItem(stock)
                     .transactionType(TransactionType.ORDER_DEDUCTION)
-                    .quantityChanged(itemReq.getQuantity())
+                    .quantityChanged(entry.getValue())
                     .previousQuantity(previousQty)
                     .newQuantity(newQty)
                     .reason("Order: " + order.getOrderNumber())
-                    .performedBy(student.getId())
+                    .performedBy(GUEST_PERFORMER_ID)
                     .build();
             inventoryTransactionRepository.save(transaction);
 
             // Send low stock alert if needed
             if (newQty > 0 && newQty < stock.getMinimumStockLevel()) {
                 notificationService.sendStockAlert(
-                        menuItem.getId(), menuItem.getName(), newQty, stock.getMinimumStockLevel());
+                        stock.getId(), stock.getItemName(), newQty, stock.getMinimumStockLevel());
             }
         }
 
@@ -153,7 +158,7 @@ public class OrderService {
         notificationService.sendNewOrderNotification(NewOrderMessage.builder()
                 .orderId(finalOrder.getId())
                 .orderNumber(finalOrder.getOrderNumber())
-                .studentName(student.getName())
+                .studentName(finalOrder.getCustomerName())
                 .totalAmount(finalOrder.getTotalAmount())
                 .queuePosition(queuePosition)
                 .timestamp(LocalDateTime.now())
@@ -162,25 +167,18 @@ public class OrderService {
         return toResponse(order);
     }
 
-    public List<OrderResponse> getStudentOrders(Long studentId) {
-        return orderRepository.findByStudentIdOrderByCreatedAtDesc(studentId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    public OrderResponse getStudentOrderById(Long orderId, Long studentId) {
-        Order order = orderRepository.findByIdAndStudentId(orderId, studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        return toResponse(order);
+    public OrderResponse getOrderById(Long orderId) {
+        return toResponse(orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId)));
     }
 
     @Transactional
-    public OrderResponse cancelOrder(Long orderId, Long studentId) {
-        Order order = orderRepository.findByIdAndStudentId(orderId, studentId)
+    public OrderResponse cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
 
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new UnauthorizedActionException("Only PENDING orders can be cancelled by students");
+            throw new UnauthorizedActionException("Only PENDING orders can be cancelled");
         }
 
         order.setStatus(OrderStatus.CANCELLED);
@@ -189,24 +187,7 @@ public class OrderService {
 
         // Restore stock
         for (OrderItem item : order.getItems()) {
-            Stock stock = stockRepository.findByMenuItemId(item.getMenuItem().getId()).orElse(null);
-            if (stock != null) {
-                int previousQty = stock.getQuantityInStock();
-                int newQty = previousQty + item.getQuantity();
-                stock.setQuantityInStock(newQty);
-                stockRepository.save(stock);
-
-                InventoryTransaction transaction = InventoryTransaction.builder()
-                        .menuItem(item.getMenuItem())
-                        .transactionType(TransactionType.ADD_STOCK)
-                        .quantityChanged(item.getQuantity())
-                        .previousQuantity(previousQty)
-                        .newQuantity(newQty)
-                        .reason("Order cancelled: " + order.getOrderNumber())
-                        .performedBy(studentId)
-                        .build();
-                inventoryTransactionRepository.save(transaction);
-            }
+            restoreStockForOrderItem(item, order.getOrderNumber(), true);
         }
 
         queueService.recalculateQueuePositions();
@@ -244,13 +225,7 @@ public class OrderService {
             order.setQueuePosition(null);
             // Restore stock on admin cancel
             for (OrderItem item : order.getItems()) {
-                Stock stock = stockRepository.findByMenuItemId(item.getMenuItem().getId()).orElse(null);
-                if (stock != null) {
-                    int previousQty = stock.getQuantityInStock();
-                    int newQty = previousQty + item.getQuantity();
-                    stock.setQuantityInStock(newQty);
-                    stockRepository.save(stock);
-                }
+                restoreStockForOrderItem(item, order.getOrderNumber(), false);
             }
         } else if (newStatus == OrderStatus.READY) {
             order.setQueuePosition(null);
@@ -308,6 +283,38 @@ public class OrderService {
                 .items(items)
                 .createdAt(order.getCreatedAt())
                 .completedAt(order.getCompletedAt())
+                .customerName(order.getCustomerName())
+                .customerContact(order.getCustomerContact())
                 .build();
     }
+
+    private void restoreStockForOrderItem(OrderItem item, String orderNumber, boolean logTransaction) {
+        List<ProductStockRequirement> requirements = requirementRepository.findByMenuItemId(item.getMenuItem().getId());
+        for (ProductStockRequirement requirement : requirements) {
+            Stock stock = stockRepository.findByIdWithLock(requirement.getStockItem().getId()).orElse(null);
+            if (stock == null) {
+                continue;
+            }
+            int previousQty = stock.getQuantityInStock();
+            int restored = requirement.getQuantityRequired() * item.getQuantity();
+            int newQty = previousQty + restored;
+            stock.setQuantityInStock(newQty);
+            stockRepository.save(stock);
+
+            if (logTransaction) {
+                InventoryTransaction transaction = InventoryTransaction.builder()
+                        .stockItem(stock)
+                        .transactionType(TransactionType.ADD_STOCK)
+                        .quantityChanged(restored)
+                        .previousQuantity(previousQty)
+                        .newQuantity(newQty)
+                        .reason("Order cancelled: " + orderNumber)
+                        .performedBy(GUEST_PERFORMER_ID)
+                        .build();
+                inventoryTransactionRepository.save(transaction);
+            }
+        }
+    }
+
+
 }

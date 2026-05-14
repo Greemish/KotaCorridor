@@ -1,7 +1,6 @@
 package com.kotacorridor.service;
 
 import com.kotacorridor.dto.request.LoginRequest;
-import com.kotacorridor.dto.request.RegisterRequest;
 import com.kotacorridor.dto.response.AuthResponse;
 import com.kotacorridor.entity.User;
 import com.kotacorridor.enums.Role;
@@ -15,7 +14,6 @@ import com.kotacorridor.service.UserDetailsServiceImpl;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,36 +25,45 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsServiceImpl userDetailsService;
 
-    @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already registered: " + request.getEmail());
+    public AuthResponse login(LoginRequest request) {
+        // DEBUG: Check what's in the database
+        System.out.println("=== LOGIN DEBUG ===");
+        System.out.println("Attempting login for email: " + request.getEmail());
+        System.out.println("Password provided: " + request.getPassword());
+
+        // Check if user exists
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElse(null);
+
+        if (user == null) {
+            System.out.println("ERROR: User not found with email: " + request.getEmail());
+            throw new ResourceNotFoundException("User not found");
         }
 
-        User user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.STUDENT)
-                .isActive(true)
-                .studentNumber(request.getStudentNumber())
-                .residenceBlock(request.getResidenceBlock())
-                .build();
+        System.out.println("User found: " + user.getName());
+        System.out.println("Role: " + user.getRole());
+        System.out.println("Stored password in DB: " + user.getPassword());
+        System.out.println("PasswordEncoder class: " + passwordEncoder.getClass().getSimpleName());
 
-        user = userRepository.save(user);
+        // Test password match directly
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        System.out.println("Password matches directly: " + passwordMatches);
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        String token = jwtUtil.generateToken(userDetails);
+        // Check role restriction
+        if (user.getRole() == Role.STUDENT) {
+            System.out.println("ERROR: Student login blocked");
+            throw new IllegalArgumentException("Student login is disabled. Only admin and staff can log in.");
+        }
 
-        return buildAuthResponse(token, user);
-    }
-
-    public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        // Try authentication
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+            System.out.println("Authentication successful!");
+        } catch (Exception e) {
+            System.out.println("Authentication failed: " + e.getMessage());
+            throw e;
+        }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtUtil.generateToken(userDetails);

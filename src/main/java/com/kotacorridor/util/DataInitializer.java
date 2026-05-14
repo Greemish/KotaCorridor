@@ -11,12 +11,10 @@ import com.kotacorridor.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -26,50 +24,54 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
     private final StockRepository stockRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepository.existsByEmail("admin@kota.com")) {
+        // Check if admin exists (using the new email)
+        if (userRepository.findByEmail("admin@university.edu").isPresent()) {
             log.info("Data already initialized, skipping.");
             return;
         }
 
         log.info("Initializing default data...");
 
-        // Create Admin user
+        // Create Admin user (plain text password)
         User admin = User.builder()
                 .name("Admin User")
-                .email("admin@kota.com")
-                .password(passwordEncoder.encode("Admin@123"))
+                .email("admin@university.edu")
+                .password("admin123")  // Plain text - NO ENCODING
                 .role(Role.ADMIN)
                 .isActive(true)
                 .build();
         userRepository.save(admin);
+        log.info("Created admin: admin@university.edu / admin123");
 
-        // Create Staff user
+        // Create Staff user (plain text password)
         User staff = User.builder()
-                .name("Kitchen Staff")
-                .email("staff@kota.com")
-                .password(passwordEncoder.encode("Staff@123"))
+                .name("Mike Johnson")
+                .email("mike.johnson@university.edu")
+                .password("staff123")  // Plain text - NO ENCODING
                 .role(Role.STAFF)
                 .isActive(true)
                 .build();
         userRepository.save(staff);
+        log.info("Created staff: mike.johnson@university.edu / staff123");
 
-        // Create Student user
+        // Create Student user (plain text password)
         User student = User.builder()
-                .name("Test Student")
-                .email("student@res.com")
-                .password(passwordEncoder.encode("Student@123"))
+                .name("John Doe")
+                .email("john.doe@university.edu")
+                .password("password123")  // Plain text - NO ENCODING
                 .role(Role.STUDENT)
                 .isActive(true)
-                .studentNumber("STU001")
+                .studentNumber("S123456")
+                .residenceBlock("Block A")
                 .build();
         userRepository.save(student);
+        log.info("Created student: john.doe@university.edu / password123");
 
-        // Create menu items and stock
+        // Create menu items and stock (optional - keep if you want)
         createMenuItemWithStock("Chicken Kota", "Delicious chicken kota",
                 new BigDecimal("25.00"), MenuCategory.KOTA, true, 50, 10);
         createMenuItemWithStock("Polony Kota", "Classic polony kota",
@@ -83,12 +85,12 @@ public class DataInitializer implements CommandLineRunner {
         createMenuItemWithStock("Extra Cheese", "Extra cheese topping",
                 new BigDecimal("3.00"), MenuCategory.EXTRA, true, 200, 30);
 
-        log.info("Default data initialized successfully.");
+        log.info("Default data initialized successfully. Total users: {}", userRepository.count());
     }
 
     private void createMenuItemWithStock(String name, String description, BigDecimal price,
-                                          MenuCategory category, boolean available,
-                                          int quantity, int minLevel) {
+                                         MenuCategory category, boolean available,
+                                         int quantity, int minLevel) {
         MenuItem menuItem = MenuItem.builder()
                 .name(name)
                 .description(description)
@@ -99,10 +101,9 @@ public class DataInitializer implements CommandLineRunner {
         menuItem = menuItemRepository.save(menuItem);
 
         Stock stock = Stock.builder()
-                .menuItem(menuItem)
+                .itemName(name + " stock")
                 .quantityInStock(quantity)
                 .minimumStockLevel(minLevel)
-                .lastRestockedDate(LocalDateTime.now())
                 .unitOfMeasure("pieces")
                 .build();
         stockRepository.save(stock);

@@ -28,6 +28,12 @@ export interface MenuItem {
   isAvailable: boolean;
   imageUrl?: string;
   stockLevel?: number;
+  stockRequirements?: {
+    stockItemId: number;
+    stockItemName: string;
+    quantityRequired: number;
+    unitOfMeasure: string;
+  }[];
 }
 
 export type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
@@ -57,6 +63,8 @@ export interface Order {
 }
 
 export interface PlaceOrderRequest {
+  customerName: string;
+  customerContact?: string;
   items: { menuItemId: number; quantity: number; customizations?: string }[];
   specialInstructions?: string;
 }
@@ -103,6 +111,7 @@ export interface StockItem {
   unitOfMeasure: string;
   stockStatus: string;
   lastRestockedDate?: string;
+
 }
 
 export interface StockTransaction {
@@ -129,6 +138,7 @@ export interface AppUser {
 }
 
 export interface AuditLog {
+  timestamp: Date;
   id: number;
   action: string;
   performedBy: string;

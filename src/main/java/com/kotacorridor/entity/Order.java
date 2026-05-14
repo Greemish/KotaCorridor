@@ -27,8 +27,14 @@ public class Order {
     private String orderNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
+    @JoinColumn(name = "student_id")
     private User student;
+
+    @Column
+    private String customerName;
+
+    @Column
+    private String customerContact;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

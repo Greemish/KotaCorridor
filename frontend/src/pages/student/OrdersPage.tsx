@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMyOrders, cancelOrder } from '../../api/orders';
+import { getOrder, cancelOrder } from '../../api/orders';
 import OrderCard from '../../components/OrderCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Link } from 'react-router-dom';
@@ -9,20 +9,24 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrders = () => {
-    getMyOrders()
-      .then((res) => setOrders(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  const fetchOrders = async () => {
+    try {
+      const stored = localStorage.getItem('guest_order_ids');
+      const ids: number[] = stored ? JSON.parse(stored) : [];
+      const results = await Promise.all(ids.map((id) => getOrder(id).then((res) => res.data).catch(() => null)));
+      setOrders(results.filter((o): o is Order => o !== null).sort((a, b) => b.id - a.id));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { void fetchOrders(); }, []);
 
   const handleCancel = async (id: number) => {
     if (!confirm('Cancel this order?')) return;
     try {
       await cancelOrder(id);
-      fetchOrders();
+      await fetchOrders();
     } catch {
       alert('Unable to cancel order.');
     }
@@ -33,7 +37,7 @@ export default function OrdersPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Your Orders</h1>
         <Link to="/menu" className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
           + New Order
         </Link>
